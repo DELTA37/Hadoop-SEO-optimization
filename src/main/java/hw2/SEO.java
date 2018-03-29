@@ -98,14 +98,14 @@ public class SEO extends Configured implements Tool {
 
 			for (LongWritable clicks : nums) {
 				if (stored.getQuery().equals(word.getQuery())) {
-					current_clicks += clicks.get();
+					current_clicks += 1;
 				} else {
 					if (current_clicks > max_clicks) {
 						max.set(stored);
 						max_clicks = current_clicks;
 					}
 					stored.set(word);
-					current_clicks = clicks.get();
+					current_clicks = 1;
 				}
 			}
 			if (max_clicks >= min_clicks) {
@@ -113,27 +113,6 @@ public class SEO extends Configured implements Tool {
 			}
 		}
   }
-
-  public static class SeoCombiner extends Reducer<TextHostPair, LongWritable, TextHostPair, LongWritable> {
-		@Override
-    protected void reduce(TextHostPair word, Iterable<LongWritable> nums, Context context) throws IOException, InterruptedException {
-			long current_clicks = 0;
-
-			TextHostPair stored = new TextHostPair();
-			stored.set(word);
-
-			for (LongWritable clicks : nums) {
-				if (stored.getQuery().equals(word.getQuery())) {
-					current_clicks += clicks.get();
-				} else {
-					context.write(stored, new LongWritable(current_clicks));
-					stored.set(word);
-					current_clicks = clicks.get();
-				}
-			}
-		}
-  }
-
 
   private Job getJobConf(String inputDir, String outputDir) throws Exception {
 		Configuration conf = getConf();
@@ -144,7 +123,6 @@ public class SEO extends Configured implements Tool {
     job.setJarByClass(SEO.class);
 
 		job.setMapperClass(SeoMapper.class);
-		job.setCombinerClass(SeoCombiner.class);
 		job.setReducerClass(SeoReducer.class);
 
 		job.setPartitionerClass(SeoPartitioner.class);
