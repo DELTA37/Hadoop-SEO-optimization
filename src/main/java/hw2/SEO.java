@@ -101,7 +101,7 @@ public class SEO extends Configured implements Tool {
 					current_clicks += clicks.get();
 				} else {
 					if (current_clicks > max_clicks) {
-						max.set(current);
+						max.set(stored);
 						max_clicks = current_clicks;
 					}
 					stored.set(word);
@@ -126,7 +126,7 @@ public class SEO extends Configured implements Tool {
 				if (stored.getQuery().equals(word.getQuery())) {
 					current_clicks += clicks.get();
 				} else {
-					content.write(stored, current_clicks);
+					context.write(stored, new LongWritable(current_clicks));
 					stored.set(word);
 					current_clicks = clicks.get();
 				}
