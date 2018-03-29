@@ -75,8 +75,8 @@ public class SEO extends Configured implements Tool {
 		@Override
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 			String[] splitted = value.toString().split("\t");
-			String query = splitted[0];
-			String host = TextHostPair.parseHost(splitted[1]);
+			String query = splitted[0].trim();
+			String host = TextHostPair.parseHost(splitted[1].trim());
 			if (host == null) {
 				context.getCounter("COMMON_COUNTERS", "BadURLS").increment(1);
 				return ;
