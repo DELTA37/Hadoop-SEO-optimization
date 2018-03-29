@@ -88,32 +88,52 @@ public class SEO extends Configured implements Tool {
   public static class SeoReducer extends Reducer<TextHostPair, LongWritable, Text, LongWritable> {
 		@Override
     protected void reduce(TextHostPair word, Iterable<LongWritable> nums, Context context) throws IOException, InterruptedException {
-			long min_clicks = context.getConfiguration().getLong(MIN_CLICKS, 0);
+			long min_clicks = context.getConfiguration().getLong(MIN_CLICKS, 1);
 			long max_clicks = 0;
 			long current_clicks = 0;
 
 			TextHostPair max = new TextHostPair();
-			TextHostPair current = new TextHostPair();
 			TextHostPair stored = new TextHostPair();
+			stored.set(word);
 
-			for (LongWritable ignored : nums) {
-				current.set(word);
-				if (stored.getQuery().equals(current.getQuery())) {
-					current_clicks += 1;
+			for (LongWritable clicks : nums) {
+				if (stored.getQuery().equals(word.getQuery())) {
+					current_clicks += clicks.get();
 				} else {
 					if (current_clicks > max_clicks) {
 						max.set(current);
 						max_clicks = current_clicks;
 					}
-					stored.set(current);
-					current_clicks = 1;
+					stored.set(word);
+					current_clicks = clicks.get();
 				}
 			}
-			if (max_clicks > min_clicks) {
+			if (max_clicks >= min_clicks) {
 				context.write(new Text(max.toString()), new LongWritable(max_clicks));
 			}
 		}
   }
+
+  public static class SeoCombiner extends Reducer<TextHostPair, LongWritable, TextHostPair, LongWritable> {
+		@Override
+    protected void reduce(TextHostPair word, Iterable<LongWritable> nums, Context context) throws IOException, InterruptedException {
+			long current_clicks = 0;
+
+			TextHostPair stored = new TextHostPair();
+			stored.set(word);
+
+			for (LongWritable clicks : nums) {
+				if (stored.getQuery().equals(word.getQuery())) {
+					current_clicks += clicks.get();
+				} else {
+					content.write(stored, current_clicks);
+					stored.set(word);
+					current_clicks = clicks.get();
+				}
+			}
+		}
+  }
+
 
   private Job getJobConf(String inputDir, String outputDir) throws Exception {
 		Configuration conf = getConf();
@@ -124,6 +144,7 @@ public class SEO extends Configured implements Tool {
     job.setJarByClass(SEO.class);
 
 		job.setMapperClass(SeoMapper.class);
+		job.setCombinerClass(SeoCombiner.class);
 		job.setReducerClass(SeoReducer.class);
 
 		job.setPartitionerClass(SeoPartitioner.class);
